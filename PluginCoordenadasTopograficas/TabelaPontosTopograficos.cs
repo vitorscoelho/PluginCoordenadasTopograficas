@@ -1,10 +1,6 @@
-﻿using OfficeOpenXml;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PluginCoordenadasTopograficas
 {
@@ -53,7 +49,7 @@ namespace PluginCoordenadasTopograficas
         public readonly TipoRepresentacaoPonto representacaoPontoTipo;
         public readonly string representacaoPontoLayer;
         public readonly string representacaoPontoNomeBloco;
-        public readonly double representacaoPontoEscalaBloco;
+        public readonly double? representacaoPontoEscalaBloco;
         public readonly string padraoTextoDescritivo;
         private readonly CultureInfo cultureInfo;
 
@@ -78,10 +74,34 @@ namespace PluginCoordenadasTopograficas
             this.mTextHeight = tabelaExcel.getConfiguracaoDouble(18, 2);
             this.mTextLineSpaceFactor = tabelaExcel.getConfiguracaoDouble(19, 2);
             this.representacaoPontoTipo = parseRepresentacaoPonto(tabelaExcel.getConfiguracaoString(22, 2));
-            this.representacaoPontoLayer = tabelaExcel.getConfiguracaoString(23, 2);
-            this.representacaoPontoNomeBloco = tabelaExcel.getConfiguracaoString(24, 2);
-            this.representacaoPontoEscalaBloco = tabelaExcel.getConfiguracaoDouble(25, 2);
+            if (this.representacaoPontoTipo != TipoRepresentacaoPonto.SemRepresentacao)
+            {
+                this.representacaoPontoLayer = tabelaExcel.getConfiguracaoString(23, 2);
+                if (this.representacaoPontoTipo != TipoRepresentacaoPonto.Ponto)
+                {
+                    this.representacaoPontoEscalaBloco = tabelaExcel.getConfiguracaoDouble(25, 2);
+                    if (this.representacaoPontoTipo == TipoRepresentacaoPonto.Bloco)
+                    {
+                        this.representacaoPontoNomeBloco = tabelaExcel.getConfiguracaoString(24, 2);
+                    }
+                }
+            }
             this.padraoTextoDescritivo = tabelaExcel.getConfiguracaoString(26, 2, valorPadrao: "");
+
+            if (this.casasDecimais < 0) throw new ConversaoDadoExcelException($"O valor da célula L4C2, na planilha 'Configurações', deveria ser um número inteiro maior ou igual a zero.");
+            if (this.multiplicadorDistancia <= 0) throw new ConversaoDadoExcelException($"O valor da célula L7C2, na planilha 'Configurações', deveria ser um número real maior que zero.");
+            if (this.mTextHeight <= 0) throw new ConversaoDadoExcelException($"O valor da célula L18C2, na planilha 'Configurações', deveria ser um número real maior que zero.");
+            if (this.mTextLineSpaceFactor < 0.25 || this.mTextLineSpaceFactor > 4.0) throw new ConversaoDadoExcelException($"O valor da célula L19C2, na planilha 'Configurações', deveria ser um número real maior ou igual a 0.25 e menor ou igual a 4.0.");
+
+            if (this.representacaoPontoTipo != TipoRepresentacaoPonto.SemRepresentacao)
+            {
+                if (this.representacaoPontoLayer == null) throw new ConversaoDadoExcelException($"O valor na célula L23C2, na planilha 'Configurações', é nulo, mas não poderia ser.");
+                if (this.representacaoPontoTipo != TipoRepresentacaoPonto.Ponto)
+                {
+                    if (this.representacaoPontoTipo == TipoRepresentacaoPonto.Bloco && this.representacaoPontoNomeBloco == null) throw new ConversaoDadoExcelException($"O valor na célula L24C2, na planilha 'Configurações', é nulo, mas não poderia ser.");
+                    if (this.representacaoPontoEscalaBloco == null) throw new ConversaoDadoExcelException($"O valor na célula L25C2, na planilha 'Configurações', é nulo, mas não poderia ser.");
+                }
+            }
 
             this.cultureInfo = new CultureInfo("pt-BR");
             cultureInfo.NumberFormat.NumberDecimalDigits = this.casasDecimais;
@@ -100,23 +120,17 @@ namespace PluginCoordenadasTopograficas
                 if (naoDesenhar)
                 {
                     linha++;
-                    break;
+                    continue;
                 }
-                try
-                {
-                    PontoTopografico ponto = new PontoTopografico(
-                        nome: tabelaExcel.getDadoString(linha, 1, valorPadrao: ""),
-                        norte: tabelaExcel.getDadoDouble(linha, 2),
-                        leste: tabelaExcel.getDadoDouble(linha, 3),
-                        altitude: tabelaExcel.getDadoDouble(linha, 4, valorPadrao: 0.0)
-                    );
-                    lista.Add(ponto);
-                    linha++;
-                }
-                catch
-                {
-                    break;
-                }
+                if (tabelaExcel.dadoEhNull(linha, 2) && tabelaExcel.dadoEhNull(linha, 3)) break;
+                PontoTopografico ponto = new PontoTopografico(
+                    nome: tabelaExcel.getDadoString(linha, 1, valorPadrao: ""),
+                    norte: tabelaExcel.getDadoDouble(linha, 2),
+                    leste: tabelaExcel.getDadoDouble(linha, 3),
+                    altitude: tabelaExcel.getDadoDouble(linha, 4, valorPadrao: 0.0)
+                );
+                lista.Add(ponto);
+                linha++;
             }
             return lista;
         }
@@ -145,7 +159,7 @@ namespace PluginCoordenadasTopograficas
                 case "Bloco":
                     return TipoRepresentacaoPonto.Bloco;
                 default:
-                    throw new ArgumentException($"O tipo de representação do ponto topográfico escolhido, '{valor}', é inválido.");
+                    throw new ConversaoDadoExcelException($"O tipo de representação do ponto topográfico escolhido, '{valor}', na célula L22C2, é inválido.");
             }
         }
     }

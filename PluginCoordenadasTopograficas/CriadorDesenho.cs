@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Interop.Common;
 
 namespace PluginCoordenadasTopograficas
 {
@@ -53,17 +46,14 @@ namespace PluginCoordenadasTopograficas
             {
                 Application.ShowAlertDialog("Não foi possível desenhar os pontos. Motivo:\r\n" + exception.Message);
             }
-            catch (System.Exception e)
+            catch (ConversaoDadoExcelException exception)
             {
-                /*Application.ShowAlertDialog(
-                    "Ocorreu um erro inesperado. Possíveis causas:\r\n" +
-                    "** Você selecionou uma planilha não compatível com o comando\r\n" +
-                    "** Sua planilha excel possui dados inválidos\r\n" +
-                    "** Você se esqueceu de salvar sua planilha\r\n"
-                );*/
-                //Application.ShowAlertDialog(e.StackTrace);
-                var d = new System.Windows.Forms.ThreadExceptionDialog(e);
-                d.ShowDialog();
+                Application.ShowAlertDialog("Não foi possível desenhar os pontos. Motivo:\r\n" + exception.Message);
+            }
+            catch (System.Exception exception)
+            {
+                System.Windows.Forms.ThreadExceptionDialog dialog = new System.Windows.Forms.ThreadExceptionDialog(exception);
+                dialog.ShowDialog();
             }
             finally
             {
@@ -153,7 +143,7 @@ namespace PluginCoordenadasTopograficas
         {
             BlockReference insert = new BlockReference(ponto, blockTable[nomeBloco]);
             insert.Layer = tabela.representacaoPontoLayer;
-            double escala = tabela.representacaoPontoEscalaBloco;
+            double escala = tabela.representacaoPontoEscalaBloco.GetValueOrDefault();
             insert.ScaleFactors = new Scale3d(escala, escala, 1.0);
             blockTableRecordModel.AppendEntity(insert);
             transaction.AddNewlyCreatedDBObject(insert, true);

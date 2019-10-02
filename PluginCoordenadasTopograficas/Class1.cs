@@ -1,22 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Autodesk.AutoCAD.Runtime;
-using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Interop.Common;
-using System.Text.RegularExpressions;
-using Autodesk.AutoCAD.PlottingServices;
-using System.IO;
+﻿using Autodesk.AutoCAD.Runtime;
 
 namespace PluginCoordenadasTopograficas
 {
     public class Class1
     {
+        [CommandMethod("DPT")]
         [CommandMethod("DesenharPontosTopograficos")]
         public void DesenharPontosTopograficos()
         {
@@ -32,18 +20,14 @@ namespace PluginCoordenadasTopograficas
         /// <returns> o caminho do arquivo selecionado. Retorna nulo se nenhum arquivo for selecionado
         public static string abrirJanelaSelecaoArquivo()
         {
-            System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Title = "Selecione o arquivo xlsx com as coordenadas topográficas";
-            openFileDialog.DefaultExt = "xlsx";
-            openFileDialog.Filter = "Arquivo xlsx (*.xlsx)|*.xlsx";
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
-                return openFileDialog.FileName;
-            }
-            else
-            {
-                return null;
-            }
+                Title = "Selecione o arquivo xlsx com as coordenadas topográficas",
+                DefaultExt = "xlsx",
+                Filter = "Arquivo xlsx (*.xlsx)|*.xlsx"
+            };
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK) return openFileDialog.FileName;
+            return null;
         }
     }
 }
